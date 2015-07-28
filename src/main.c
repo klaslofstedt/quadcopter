@@ -1,13 +1,20 @@
 /* Quadcopter project by Klas Löfstedt */
+
+// C
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
-
+// Default
 #include "stm32f4xx_conf.h"
 #include "stm32f4xx.h"
-#include "main.h"
-
+// Project specific
+#include "I2C.h"
+#include "delay.h"
+#include "MPU6050.h"
+#include "kalman.h"
+#include "quadcopter_structures.h"
+// USB
 #include "usbd_cdc_core.h"
 #include "usbd_usr.h"
 #include "usbd_desc.h"
@@ -21,15 +28,23 @@ __ALIGN_BEGIN USB_OTG_CORE_HANDLE  USB_OTG_dev __ALIGN_END;
 #define ESC_INIT_LOW 0
 #define ESC_INIT_HIGH 850
 #define ESC_THRUST 0
-#define ESC_RUN_MIN 1180
+#define ESC_RUN_MIN 1173
 #define ESC_RUN_MAX 1860
 
 #define PWM_FREQUENCY 400
+#define LOOP_FREQUENCY 300
+#define LOOP_PERIOD_TIME_US 3333//1/(LOOP_FREQUENCY * 1e-6)
 
-// Private function prototypes
-//void Delay(volatile uint32_t nCount);
-//void init();
-//void calculation_test();
+#define MAX_ANGLE 30
+#define M_PI 3.14159265358979323846
+
+/*typedef enum ESC_DATA_t{
+	ESC_INIT_LOW 	= 	0,
+	ESC_INIT_HIGH  	= 	850,
+	ESC_THRUST 		= 	0,
+	ESC_RUN_MIN 	= 	1173,
+	ESC_RUN_MAX 	=	1860
+} ESC_DATA_t*/
 
 typedef struct{
 	uint16_t init_low;
@@ -107,33 +122,33 @@ void ESC_SetSpeed(ESC_t *esc)
 {
 	switch(esc->pin_number){
 		case 12:
-			TIM4->CCR1 = esc->run_min + (uint16_t)(esc->speed * (esc->run_max - esc->run_min));
-			break;
+		TIM4->CCR1 = esc->run_min + (uint16_t)(esc->speed * (esc->run_max - esc->run_min));
+		break;
 
 		case 13:
-			TIM4->CCR2 = esc->run_min + (uint16_t)(esc->speed * (esc->run_max - esc->run_min));
-			break;
+		TIM4->CCR2 = esc->run_min + (uint16_t)(esc->speed * (esc->run_max - esc->run_min));
+		break;
 
 		case 14:
-			TIM4->CCR3 = esc->run_min + (uint16_t)(esc->speed * (esc->run_max - esc->run_min));
-			break;
+		TIM4->CCR3 = esc->run_min + (uint16_t)(esc->speed * (esc->run_max - esc->run_min));
+		break;
 
 		case 15:
-			TIM4->CCR4 = esc->run_min + (uint16_t)(esc->speed * (esc->run_max - esc->run_min));
-			break;
+		TIM4->CCR4 = esc->run_min + (uint16_t)(esc->speed * (esc->run_max - esc->run_min));
+		break;
 
 		default:
-			// do nothing
-			break;
+		// do nothing
+		break;
 	}
 }
 uint16_t GetPrescaler(void)
 {
 	/*  To be able to get a value lower than 65535 for TIM_Period, we need to find
-	    a prescaler. It can be found by:
+	a prescaler. It can be found by:
 
-	    SystemCoreClock / 2 / PWM_FREQUENCY / Prescaler < 65535
-	 */
+	SystemCoreClock / 2 / PWM_FREQUENCY / Prescaler < 65535
+	*/
 	uint32_t Prescaler = 1;
 	uint32_t TimerSize = pow(2, 8*sizeof(uint16_t));
 	//uint32_t test = pow(2, 8*sizeof(PWM_TIMER));
@@ -150,9 +165,9 @@ void ESC_Init(ESC_t *esc, uint16_t pin)
 	esc->speed = 0;
 	// devided by 1000000 because ESC data is in the base of us instead of s
 	esc->run_min = (((SystemCoreClock/1000000)/ (2 * Prescaler)) * (ESC_INIT_HIGH));
-	Delay(500);
+	Delay(500000);
 	ESC_SetSpeed(esc);
-	Delay(2500);
+	Delay(2500000);
 
 	esc->run_min = (((SystemCoreClock/1000000)/ (2 * Prescaler)) * (ESC_RUN_MIN));
 	esc->run_max = (((SystemCoreClock/1000000)/ (2 * Prescaler)) * (ESC_RUN_MAX));
@@ -161,16 +176,69 @@ void ESC_Init(ESC_t *esc, uint16_t pin)
 
 void USB_Init(void)
 {
-	USBD_Init(	&USB_OTG_dev,
-			USB_OTG_FS_CORE_ID,
-			&USR_desc,
-			&USBD_CDC_cb,
-			&USR_cb);
-	/*
-	 * Disable STDOUT buffering. Otherwise nothing will be printed
-	 * before a newline character or when the buffer is flushed.
-	 */
+	USBD_Init(&USB_OTG_dev, USB_OTG_FS_CORE_ID, &USR_desc, &USBD_CDC_cb, &USR_cb);
 	setbuf(stdout, NULL);
+}
+
+int count2 = 0;
+void DisplayRaw(IMU_DATA_t* acc1, IMU_DATA_t* gyr1)
+{
+	if(count2 >= 450)
+	{
+		count2 = 0;
+		printf(" gyr_rol: %.5f", gyr1->Roll);
+		printf(" gyr_pit: %.5f\r\n", gyr1->Pitch);
+		printf(" acc_rol: %.5f1", acc1->Roll);
+		printf(" acc_pit: %.5f\r\n", acc1->Pitch);
+	}
+	count2++;
+}
+int count = 0;
+void DisplayFixed(PID_DATA_t* r, PID_DATA_t* p)
+{
+	if(count >= 45)
+	{
+		count = 0;
+		printf(" rol_deg: %.5f", r->Degrees);
+		printf(" rol_vel: %.5f\r\n", r->Velocity);
+		printf(" pit_deg: %.5f", p->Degrees);
+		printf(" pit_vel: %.5f\r\n", p->Velocity);
+	}
+	count++;
+}
+
+void CheckBondaries(ESC_t *esc)
+{
+	if(esc->speed > 1.0){
+		esc->speed = 1.0;
+	}else if(esc->speed < 0){
+		esc->speed = 0;
+	}
+}
+
+void UpdateMotors(ESC_t* esc1, ESC_t* esc2, ESC_t* esc3, ESC_t* esc4, float roll, float pitch)
+{
+	float thrust = 0.53;
+	/*I'm not sure about these formulas. should give this pattern:
+
+	1  front  2
+	left    right
+	4   back  3 */
+
+	esc2->speed = thrust - pitch + roll; // - yawValue;
+	esc1->speed = thrust + pitch + roll; // + yawValue;
+	esc4->speed = thrust + pitch - roll; // - yawValue;
+	esc3->speed = thrust - pitch - roll; // + yawValue;
+
+	CheckBondaries(esc1);
+	CheckBondaries(esc2);
+	CheckBondaries(esc3);
+	CheckBondaries(esc4);
+
+	ESC_SetSpeed(esc1);
+	ESC_SetSpeed(esc2);
+	ESC_SetSpeed(esc3);
+	ESC_SetSpeed(esc4);
 }
 
 int main(void)
@@ -178,29 +246,58 @@ int main(void)
 	USB_Init();
 	SystemCoreClockUpdate(); // Get Core Clock Frequency
 
-	if (SysTick_Config(SystemCoreClock / 1000)) { //SysTick 1 msec interrupts
+	if (SysTick_Config(SystemCoreClock / 1000000)) { //SysTick 1 msec interrupts
 		while (1); //Capture error
 	}
-	Delay(500);
+	/*int i;
+	for(i = 0; i < 15; i++){
+		printf("starting\r\n");
+		Delay(1000000);
+	}*/
+	printf("ready\r\n");
+
+	Delay(500000);
+
+
 	PWM_GPIO_Init();
 	PWM_TimeBase_Init();
 	PWM_OutputCompare_Init();
+
+	I2C_Init1(); // fix so any address can use this
+	printf("init_i2c\r\n");
+	MPU6050_Init();
+	printf("init_mpu\r\n");
+
 	ESC_t esc1, esc2, esc3, esc4;
+	IMU_DATA_t mpu_acc1, mpu_gyr1;
+	PID_DATA_t mpu_roll1, mpu_pitch1, mpu_yaw1;
+	mpu_roll1.I_Term = 0;
+	mpu_pitch1.I_Term = 0;
+	mpu_yaw1.I_Term = 0;
+	mpu_roll1.SetPoint = 0;
+	mpu_pitch1.SetPoint = 0;
+
 	ESC_Init(&esc1, 12);
 	ESC_Init(&esc2, 13);
 	ESC_Init(&esc3, 14);
 	ESC_Init(&esc4, 15);
-	Delay(1500);
+	Delay(1500000);
 
+	volatile uint32_t CurrentTime = GetMicros();
 	for(;;) {
-		esc1.speed = 0.5;
-		ESC_SetSpeed(&esc1);
-		esc2.speed = 0.5;
-		ESC_SetSpeed(&esc2);
-		esc3.speed = 0.5;
-		ESC_SetSpeed(&esc3);
-		esc4.speed = 0.5;
-		ESC_SetSpeed(&esc4);
+		if(GetMicros() - CurrentTime >= LOOP_PERIOD_TIME_US){
+			CurrentTime = GetMicros();
+
+			MPU6050_ReadAcc(&mpu_acc1);
+			MPU6050_ReadGyr(&mpu_gyr1);
+			//DisplayRaw(&mpu_acc1, &mpu_gyr1);
+			Kalman_Calc(&mpu_acc1, &mpu_gyr1, &mpu_roll1, &mpu_pitch1, &mpu_yaw1);
+			//DisplayFixed(&mpu_roll1, &mpu_pitch1);
+			PID_Calc(&mpu_roll1);
+			PID_Calc(&mpu_pitch1);
+
+			UpdateMotors(&esc1, &esc2, &esc3, &esc4, mpu_roll1.Output, mpu_pitch1.Output);
+		}
 	}
 	return 0;
 }
@@ -209,4 +306,4 @@ int main(void)
 void _init()
 {
 
-}
+}

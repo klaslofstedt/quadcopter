@@ -44,7 +44,8 @@ void SVC_Handler(void);
 void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
-void Delay (__IO uint32_t dlyTicks);
+uint32_t GetMicros(void);
+void Delay (volatile uint32_t dlyTicks);
 
 #ifdef __cplusplus
 }
