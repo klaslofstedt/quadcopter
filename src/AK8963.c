@@ -33,6 +33,7 @@
 
 #define AK8963_I2CDIS    0x0F  // I2C disable
 // some i2c disable bits i don't understand from the datasheet
+// take a look at the data sheet if needed in the future
 
 // write only
 #define AK8963_ASAX      0x10  // Fuse ROM x-axis sensitivity adjustment value
