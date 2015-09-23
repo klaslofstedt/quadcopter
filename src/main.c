@@ -114,7 +114,7 @@ void System_Init(void)
 	// probably doesnt need anymore?
 	SPI1_Init(SPI_BaudRatePrescaler_64);
 	AK8963_Init();
-	// and this neither
+	// and this neither?
 	SPI1_Init(SPI_BaudRatePrescaler_2);
 	#ifdef USB_DEBUG
 	printf("init_i2c\r\n");
