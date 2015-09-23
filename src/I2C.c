@@ -65,7 +65,7 @@ void I2C_Init1(void)
 	 * 1. SCL on PB6 and SDA on PB7
 	 * 2. SCL on PB8 and SDA on PB9
 	 */
-	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
+	GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9;
 	// we are going to use PB6 and PB7
 	GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
 	// set pins to alternate function
@@ -79,8 +79,8 @@ void I2C_Init1(void)
 	// init GPIOB
 
 	// Connect I2C1 pins to AF
-	GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_I2C1);	// SCL
-	GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_I2C1); // SDA
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_I2C1);	// SCL
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_I2C1); // SDA
 
 	// configure I2C1
 	I2C_InitStruct.I2C_ClockSpeed = 400000;

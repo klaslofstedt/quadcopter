@@ -2,14 +2,14 @@
 SRCS = main.c stm32f4xx_it.c system_stm32f4xx.c syscalls.c
 
 # USB
-SRCS += usbd_usr.c usbd_cdc_vcp.c usbd_desc.c usb_bsp.c
+SRCS += USB.c usbd_usr.c usbd_cdc_vcp.c usbd_desc.c usb_bsp.c
 
 # Project specific files
-SRCS += I2C.c MPU6050.c kalman.c PID.c
+SRCS += I2C.c MPU6050.c kalman.c PID.c PWM.c ESC.c USART.c SPI.c AK8963.c
 
 # Project name
 
-PROJ_NAME=quadcopterV2
+PROJ_NAME=quadcopterV3
 OUTPATH=build
 
 ###################################################
@@ -27,9 +27,10 @@ endif
 
 ###################################################
 
-CC=arm-none-eabi-gcc
-OBJCOPY=arm-none-eabi-objcopy
-SIZE=arm-none-eabi-size
+BINPATH=~/sat/bin
+CC=$(BINPATH)/arm-none-eabi-gcc
+OBJCOPY=$(BINPATH)/arm-none-eabi-objcopy
+SIZE=$(BINPATH)/arm-none-eabi-size
 
 CFLAGS  = -std=gnu99 -g -O2 -Wall -Tstm32_flash.ld
 CFLAGS += -mlittle-endian -mthumb -mthumb-interwork -nostartfiles -mcpu=cortex-m4

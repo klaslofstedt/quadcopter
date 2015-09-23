@@ -20,6 +20,8 @@
 #define BYPASS_OFF                  0x00
 
 #define PWR_MGMT_1          0x6B
+/* these names makes no sense
+should be something with clock souce PLL */
 #define PLL_X_GYRO          0x01
 #define PLL_Y_GYRO          0x02
 #define PLL_Z_GYRO          0x03

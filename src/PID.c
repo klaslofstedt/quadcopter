@@ -1,9 +1,5 @@
 #include "PID.h"
-// USB
-#include "usbd_cdc_core.h"
-#include "usbd_usr.h"
-#include "usbd_desc.h"
-#include "usbd_cdc_vcp.h"
+#include "USB.h"
 
 void PID_Calc(PID_DATA_t* pid)
 {
