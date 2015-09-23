@@ -111,6 +111,7 @@ void System_Init(void)
 	PWM_OutputCompare_Init();
 	USART_Init1();
 	I2C_Init1(); // fix so any address can use this
+	// probably doesnt need anymore?
 	SPI1_Init(SPI_BaudRatePrescaler_64);
 	AK8963_Init();
 	SPI1_Init(SPI_BaudRatePrescaler_2);
