@@ -25,7 +25,7 @@
 #define MAX_ANGLE 30
 
 ESC_t esc1, esc2, esc3, esc4;
-IMU_DATA_t mpu_acc1, mpu_gyr1;
+IMU_DATA_t mpu_acc1, mpu_gyr1, mpu_mag1;
 PID_DATA_t mpu_roll1, mpu_pitch1, mpu_yaw1;
 /******************************** Functions ***********************************/
 #ifdef USB_DEBUG
@@ -42,6 +42,20 @@ void DisplayRaw(IMU_DATA_t* acc1, IMU_DATA_t* gyr1)
 	}
 	count2++;
 }
+
+int count3 = 0;
+void DisplayMag(IMU_DATA_t* mag)
+{
+	if(count2 >= 450)
+	{
+		count2 = 0;
+		printf(" mag_rol: %.5f", mag->Roll);
+		printf(" mag_pit: %.5f\r\n", mag->Pitch);
+		printf(" mag_rol: %.5f1", mag->Yaw);
+	}
+	count2++;
+}
+
 int count = 0;
 void DisplayFixed(PID_DATA_t* r, PID_DATA_t* p)
 {
@@ -112,14 +126,14 @@ void System_Init(void)
 	USART_Init1();
 	I2C_Init1(); // fix so any address can use this
 	// probably doesnt need anymore?
-	SPI1_Init(SPI_BaudRatePrescaler_64);
-	AK8963_Init();
+	//SPI1_Init(SPI_BaudRatePrescaler_64);
 	// and this neither?
-	SPI1_Init(SPI_BaudRatePrescaler_2);
+	//SPI1_Init(SPI_BaudRatePrescaler_2);
 	#ifdef USB_DEBUG
 	printf("init_i2c\r\n");
 	#endif
 	MPU6050_Init();
+	AK8963_Init();
 	#ifdef USB_DEBUG
 	printf("init_mpu\r\n");
 	#endif
@@ -150,10 +164,13 @@ int main(void)
 				loopTest = 0;
 			}*/
 			//USART1_SendByte(0x02);
+			USART1_SendString("hello");
 			MPU6050_ReadAcc(&mpu_acc1);
 			MPU6050_ReadGyr(&mpu_gyr1);
+			AK8963_ReadMag(&mpu_mag1);
 			#ifdef USB_DEBUG
 			//DisplayRaw(&mpu_acc1, &mpu_gyr1);
+			DisplayMag(mpu_mag1);
 			#endif
 			Kalman_Calc(&mpu_acc1, &mpu_gyr1, &mpu_roll1, &mpu_pitch1, &mpu_yaw1);
 			#ifdef USB_DEBUG
@@ -163,6 +180,7 @@ int main(void)
 			PID_Calc(&mpu_pitch1);
 			//PID_Calc(&mpu_yaw1);
 			UpdateMotors(&esc1, &esc2, &esc3, &esc4, mpu_roll1.Output, mpu_pitch1.Output);
+
 		}
 	}
 	return 0;

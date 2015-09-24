@@ -2,9 +2,9 @@
 #define MPU6050_H
 
 #include <stdint.h>
-#include "stm32f4xx_conf.h"
-#include <stm32f4xx.h>
-#include <stm32f4xx_i2c.h>
+//#include "stm32f4xx_conf.h"
+//#include <stm32f4xx.h>
+//#include <stm32f4xx_i2c.h>
 #include "quadcopter_structures.h"
 
 
@@ -62,7 +62,7 @@ should be something with clock souce PLL */
 
 #define MPU6050_WHO_AM_I        0x75
 
-#define GYRO_X_SCALE 0.00026646248//0.01526717557 (en grados)
+#define GYRO_X_SCALE 0.00026646248//0.01526717557 (in degrees)
 #define GYRO_Y_SCALE 0.00026646248//0.01526717557
 #define GYRO_Z_SCALE 0.00026646248//0.01526717557
 #define GYRO_AVERAGE_OFFSET_X 0
