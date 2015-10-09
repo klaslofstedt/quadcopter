@@ -28,7 +28,7 @@ void USART1_SendString(volatile char *s)
 	}
 }
 
-void USART_Init1(void)
+void USART1_Init(void)
 {
 	GPIO_InitTypeDef 	GPIO_InitStruct;
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);

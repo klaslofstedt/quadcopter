@@ -48,9 +48,8 @@ void I2C_stop(I2C_TypeDef* I2Cx)
 	I2C_GenerateSTOP(I2Cx, ENABLE);
 }
 
-void I2C_Init1(void)
+void I2C1_Init(void)
 {
-
 	GPIO_InitTypeDef GPIO_InitStruct;
 	I2C_InitTypeDef I2C_InitStruct;
 

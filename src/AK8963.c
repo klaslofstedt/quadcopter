@@ -1,4 +1,4 @@
-#include "AK8963.h"
+ #include "AK8963.h"
 #include "I2C.h"
 #include "delay.h"
 #include "USB.h"
@@ -7,6 +7,7 @@
 
 //Magnetometer Registers
 #define AK8963_ADDRESS   0x0C
+
 
 // read only
 #define WHO_AM_I_AK8963  0x00 // should return 0x48

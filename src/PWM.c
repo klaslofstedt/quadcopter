@@ -4,6 +4,13 @@
 #include "stm32f4xx_conf.h"
 #include "PWM.h"
 
+void PWM_Init(void)
+{
+    PWM_GPIO_Init();
+	PWM_TimeBase_Init();
+	PWM_OutputCompare_Init();
+}
+
 void PWM_SetDutyCycle(uint8_t PinNum, uint16_t DutyCycle)
 {
   switch(PinNum){
